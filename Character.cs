@@ -7,24 +7,36 @@ public abstract class Character : MonoBehaviour
 
     [SerializeField] private float speed;
 
-    private Animator animator;
+    protected Animator myAnimator;
 
     protected Vector2 direction;
 
-    //private Rigidbody2D myRigidBody;
+    private Rigidbody2D myRigidBody;
+
+    protected bool isAtacking = false;
+
+    protected Coroutine attackRoutine;
+
+    public bool isMoving
+    {
+        get
+        {
+            return direction.x != 0 || direction.y != 0;
+        }
+    }
 
     
     // Start is called before the first frame update
     protected virtual void Start()
     {
-        //myRigidBody = GetComponent<Rigidbody2D>();
-        animator = GetComponent<Animator>();
+        myRigidBody = GetComponent<Rigidbody2D>();
+        myAnimator = GetComponent<Animator>();
     }
 
     // Update is called once per frame
     protected virtual void Update()
     {
-        
+        HandleLayers();
     }
 
     private void FixedUpdate()
@@ -34,28 +46,53 @@ public abstract class Character : MonoBehaviour
 
     public void Move()
     {
-        transform.Translate(direction * speed * Time.deltaTime);
-        //myRigidBody.velocity = direction * speed;
+        //transform.Translate(direction * speed * Time.deltaTime);
+        myRigidBody.velocity = direction.normalized * speed;
+    }
 
-        if (direction.x != 0 || direction.y != 0)
+    public void HandleLayers()
+    {
+        if (isMoving)
         {
-            AnimateMovement(direction);
+            ActivateLayer("Walk");
+
+            myAnimator.SetFloat("x", direction.x);
+            myAnimator.SetFloat("y", direction.y);
+
+            StopAttack();
+        }
+        else if(isAtacking)
+        {
+            ActivateLayer("Attack");
         }
         else
         {
-            animator.SetLayerWeight(1, 0);
+            ActivateLayer("Idle");
         }
-
 
     }
 
 
-    public void AnimateMovement(Vector2 direction)
+    public void ActivateLayer(string layerName)
     {
+        for (int i = 0; i < myAnimator.layerCount; i++)
+        {
+            myAnimator.SetLayerWeight(i, 0);
+        }
 
-        animator.SetLayerWeight(1, 1);
+        myAnimator.SetLayerWeight(myAnimator.GetLayerIndex(layerName), 1);
+    }
 
-        animator.SetFloat("x", direction.x);
-        animator.SetFloat("y", direction.y);
+    public void StopAttack()
+    {
+        if (attackRoutine != null)
+        {
+            StopCoroutine(attackRoutine);
+
+            isAtacking = false;
+
+            myAnimator.SetBool("attack", isAtacking);
+        }
+       
     }
 }
